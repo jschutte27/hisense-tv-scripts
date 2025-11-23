@@ -58,10 +58,12 @@ function Send-TVCommand {
         if ($socket.Connected) {
             Write-Host "Connected to TV at $IPAddress : $Port"
             
-            # Send the ASCII command bytes
+            # Send the ASCII command (hex string as text)
             $socket.Send($Command) | Out-Null
             
-            Write-Host "Command sent (ASCII): $(([System.Text.Encoding]::ASCII.GetString($Command)))"
+            # Display the command sent
+            $asciiCommand = [System.Text.Encoding]::ASCII.GetString($Command)
+            Write-Host "Command sent (ASCII text): $asciiCommand"
             
             # Wait a moment for response
             Start-Sleep -Milliseconds 500
@@ -71,8 +73,11 @@ function Send-TVCommand {
             try {
                 $bytesReceived = $socket.Receive($receiveBuffer, 1024, [System.Net.Sockets.SocketFlags]::None)
                 if ($bytesReceived -gt 0) {
-                    $response = [System.Text.Encoding]::ASCII.GetString($receiveBuffer, 0, $bytesReceived)
-                    Write-Host "Response received: $response"
+                    $hexResponse = ($receiveBuffer[0..($bytesReceived-1)] | ForEach-Object { $_.ToString("X2") }) -join " "
+                    Write-Host "Response received (hex): $hexResponse"
+                    # Also try to display as ASCII if readable
+                    $asciiResponse = [System.Text.Encoding]::ASCII.GetString($receiveBuffer, 0, $bytesReceived)
+                    Write-Host "Response (ASCII): $asciiResponse"
                 }
             } catch {
                 # Response timeout is okay, command may still succeed
@@ -94,6 +99,7 @@ function Send-TVCommand {
 
 # BM Series (100BM66D) uses ASCII protocol on port 8088
 # ASCII command format (from documentation):
+# Commands are sent as ASCII hex strings (not binary)
 #
 # Power On:  DD FF 00 08 C1 15 00 00 01 BB BB DD BB CC
 # Power Off: DD FF 00 08 C1 15 00 00 01 AA AA DD BB CC
@@ -102,33 +108,29 @@ function Send-TVCommand {
 
 switch ($Command.ToLower()) {
     'poweron' {
-        # Power on command for BM series
-        # Start: DD FF, Length: 00 08, Code: C1 15, Reserved: 00 00, Data: 01 BB BB, Checksum: DD, End: BB CC
-        $commandString = [char]0xDD + [char]0xFF + [char]0x00 + [char]0x08 + [char]0xC1 + [char]0x15 + [char]0x00 + [char]0x00 + [char]0x01 + [char]0xBB + [char]0xBB + [char]0xDD + [char]0xBB + [char]0xCC
-        $command = [System.Text.Encoding]::ASCII.GetBytes($commandString)
+        # Power on command for BM series (ASCII hex string)
+        $commandString = "DDFF0008C115000001BBBBDDBBCC"
+        $commandBytes = [System.Text.Encoding]::ASCII.GetBytes($commandString)
     }
     'poweroff' {
-        # Power off command for BM series
-        # Start: DD FF, Length: 00 08, Code: C1 15, Reserved: 00 00, Data: 01 AA AA, Checksum: DD, End: BB CC
-        $commandString = [char]0xDD + [char]0xFF + [char]0x00 + [char]0x08 + [char]0xC1 + [char]0x15 + [char]0x00 + [char]0x00 + [char]0x01 + [char]0xAA + [char]0xAA + [char]0xDD + [char]0xBB + [char]0xCC
-        $command = [System.Text.Encoding]::ASCII.GetBytes($commandString)
+        # Power off command for BM series (ASCII hex string)
+        $commandString = "DDFF0008C115000001AAAADDBBCC"
+        $commandBytes = [System.Text.Encoding]::ASCII.GetBytes($commandString)
     }
     'screenon' {
-        # Screen on command for BM series
-        # Start: DD FF, Length: 00 07, Code: C1 31, Reserved: 00 01, Data: 01, Checksum: F6, End: BB CC
-        $commandString = [char]0xDD + [char]0xFF + [char]0x00 + [char]0x07 + [char]0xC1 + [char]0x31 + [char]0x00 + [char]0x01 + [char]0x01 + [char]0xF6 + [char]0xBB + [char]0xCC
-        $command = [System.Text.Encoding]::ASCII.GetBytes($commandString)
+        # Screen on command for BM series (ASCII hex string)
+        $commandString = "DDFF0007C131000101F6BBCC"
+        $commandBytes = [System.Text.Encoding]::ASCII.GetBytes($commandString)
     }
     'screenoff' {
-        # Screen off command for BM series
-        # Start: DD FF, Length: 00 07, Code: C1 31, Reserved: 00 01, Data: 00, Checksum: F7, End: BB CC
-        $commandString = [char]0xDD + [char]0xFF + [char]0x00 + [char]0x07 + [char]0xC1 + [char]0x31 + [char]0x00 + [char]0x01 + [char]0x00 + [char]0xF7 + [char]0xBB + [char]0xCC
-        $command = [System.Text.Encoding]::ASCII.GetBytes($commandString)
+        # Screen off command for BM series (ASCII hex string)
+        $commandString = "DDFF0007C131000100F7BBCC"
+        $commandBytes = [System.Text.Encoding]::ASCII.GetBytes($commandString)
     }
 }
 
 Write-Host "Sending '$Command' command to Hisense TV at $IPAddress : $Port"
-$result = Send-TVCommand -IPAddress $IPAddress -Command $command -Port $Port
+$result = Send-TVCommand -IPAddress $IPAddress -Command $commandBytes -Port $Port
 
 if ($result) {
     Write-Host "Command executed successfully"
