@@ -239,6 +239,16 @@ switch ($Command.ToLower()) {
         $commandString = "DDFF0007C13100010100F7BBCC"
         $commandBytes = [System.Text.Encoding]::ASCII.GetBytes($commandString)
     }
+    'hdmi1' {
+        # Screen off command for BM series (ASCII hex string)
+        $commandString = "DDFF0007C1080001xxOExxBBCC"
+        $commandBytes = [System.Text.Encoding]::ASCII.GetBytes($commandString)
+    }
+    'hdmi2' {
+        # Screen off command for BM series (ASCII hex string)
+        $commandString = "DDFF0007C1080001xxOFxxBBCC"
+        $commandBytes = [System.Text.Encoding]::ASCII.GetBytes($commandString)
+    }
 }
 
 Write-Host "Sending '$Command' command to Hisense TV '$TVName' at $IPAddress : $Port"
