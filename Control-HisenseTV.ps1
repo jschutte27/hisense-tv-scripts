@@ -51,12 +51,12 @@ param(
 $TVConfig = @{
     "West" = @{
         IPAddress = "192.168.60.30"
-        MACAddress = "00:1A:2B:3C:4D:5E"
+        MACAddress = "DC:9A:7D:ED:B4:A4"
         Description = "West Sanctuary display (piano side)"
     }
     "East" = @{
         IPAddress = "192.168.60.31"
-        MACAddress = "00:1A:2B:3C:4D:5F"
+        MACAddress = "DC:9A:7D:ED:B4:A6"
         Description = "East Sanctuary display (organ side)"
     }
     # Add more TVs here as needed
@@ -213,15 +213,16 @@ switch ($Command.ToLower()) {
         # Try Wake-on-LAN first
         Write-Host "Attempting Wake-on-LAN for '$TVName'..."
         $wolResult = Send-WakeOnLan -MACAddress $MACAddress
+        Write-Host "Wake-on-LAN result: $wolResult"
+
+        # # Wait for TV to boot
+        # Write-Host "Waiting for TV to boot (10 seconds)..."
+        # Start-Sleep -Seconds 10
         
-        # Wait for TV to boot
-        Write-Host "Waiting for TV to boot (10 seconds)..."
-        Start-Sleep -Seconds 10
-        
-        # Then send the power on command via IP
-        Write-Host "Sending power on command via IP..."
-        $commandString = "DDFF0008C115000001BBBBDDBBCC"
-        $commandBytes = [System.Text.Encoding]::ASCII.GetBytes($commandString)
+        # # Then send the power on command via IP
+        # Write-Host "Sending power on command via IP..."
+        # $commandString = "DDFF0008C115000001BBBBDDBBCC"
+        # $commandBytes = [System.Text.Encoding]::ASCII.GetBytes($commandString)
     }
     'poweroff' {
         # Power off command for BM series (ASCII hex string)
@@ -230,12 +231,12 @@ switch ($Command.ToLower()) {
     }
     'screenon' {
         # Screen on command for BM series (ASCII hex string)
-        $commandString = "DDFF0007C131000001F7BBCC"
+        $commandString = "DDFF0007C13100010101F6BBCC"
         $commandBytes = [System.Text.Encoding]::ASCII.GetBytes($commandString)
     }
     'screenoff' {
         # Screen off command for BM series (ASCII hex string)
-        $commandString = "DDFF0007C131000000F6BBCC"
+        $commandString = "DDFF0007C13100010100F7BBCC"
         $commandBytes = [System.Text.Encoding]::ASCII.GetBytes($commandString)
     }
 }
